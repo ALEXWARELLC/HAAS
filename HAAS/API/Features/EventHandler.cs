@@ -12,13 +12,14 @@ internal class EventHandler
     {
         Configuration = _config;
         Exiled.Events.Handlers.Player.Joined += OnPlayerJoin;
+        Exiled.Events.Handlers.Player.Left += OnPlayerLeft;
     }
 
     public void Disable()
     {
         Configuration = null;
         Exiled.Events.Handlers.Player.Joined -= OnPlayerJoin;
-        ActivatedDuringRound = false;
+        Exiled.Events.Handlers.Player.Left += OnPlayerLeft;
     }
 
     private void OnPlayerJoin(JoinedEventArgs ev)
@@ -27,9 +28,15 @@ internal class EventHandler
         {
             if (Server.PlayerCount >= Configuration?.PlayerSensitivity)
             {
-                WebhookConnector.Send(Configuration.WebhookURL, WebhookConnector.BuildMessage(Configuration.CustomMessage));
                 ActivatedDuringRound = true;
+                WebhookConnector.Send(Configuration.WebhookURL, WebhookConnector.BuildMessage(Configuration.CustomMessage));
             }
         }
+    }
+
+    private void OnPlayerLeft(LeftEventArgs ev)
+    {
+        if (Server.PlayerCount >= Configuration?.PlayerSensitivity)
+            ActivatedDuringRound = false;
     }
 }

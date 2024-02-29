@@ -8,7 +8,7 @@ public class Plugin : Plugin<Config>
     public override string Name => "High Activity Alert System";
     public override string Author => "Cypher The Protogen";
     public override string Prefix => "HAAS";
-    public override Version Version => new Version(1, 0, 0);
+    public override Version Version => new Version(0, 0, 1, 2);
     private API.Features.EventHandler? Events;
     
     public async override void OnEnabled()
