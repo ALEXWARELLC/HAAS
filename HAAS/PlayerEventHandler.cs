@@ -33,6 +33,8 @@ internal class PlayerEventHandler
     {
         if (!_.Player.IsNPC)
             PlayerCount++;
+
+        Task.Run(async () => await SendAlert());
     }
 
     public async Task SendAlert()
