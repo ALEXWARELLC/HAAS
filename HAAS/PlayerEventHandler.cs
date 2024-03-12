@@ -42,8 +42,13 @@ internal class PlayerEventHandler
         if (PreTriggered || PlayerCount < LocalSettings.MinPlayerCount)
             return;
 
-        await WebhookClient.SendMessageAsync(LocalSettings.WebhookMessage);
+        if (await WebhookClient.SendMessageAsync(LocalSettings.WebhookMessage))
+        {
+            // The Webhook managed to be sent, so we can set the PreTriggered flag to true.
+            PreTriggered = true;
+        };
 
-        PreTriggered = true;
+        // If the Webhook failed to send, we don't set the PreTriggered flag to true
+        // and it'll retry sending messages to the webhook on the next player verification.
     }
 }
