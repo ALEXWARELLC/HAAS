@@ -24,6 +24,8 @@ public class Plugin : Plugin<Config>
         Exiled.Events.Handlers.Player.Verified += PlayerEvents.OnPlayerVerified;
         Exiled.Events.Handlers.Player.Left += PlayerEvents.OnPlayerLeft;
         Exiled.Events.Handlers.Server.EndingRound += PlayerEvents.OnRoundRestart;
+
+        Log.Debug($"Set Minimum Player Count to: {Config.Settings.MinPlayerCount}");
     }
 
     public override void OnDisabled()

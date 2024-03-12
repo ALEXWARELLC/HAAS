@@ -1,5 +1,7 @@
-﻿using HAAS.API.Interfaces;
+﻿using Exiled.API.Features;
+using HAAS.API.Interfaces;
 using Newtonsoft.Json;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Security.Policy;
@@ -26,29 +28,62 @@ internal class WebhookClient : IDisposable
         return color;
     }
 
-    public async Task<bool> SendMessageAsync(string Content)
-    {
-        using (var client = new HttpClient())
-        {
-            HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, Target)
-            {
-                Content = new StringContent(JsonConvert.SerializeObject(new
-                {
-                    username = Name,
-                    embeds = new[]
-                    {
-                        new
-                        {
-                            name = "High Activity Alert System - ALPHA",
-                            description = Content,
-                            color = Color
-                        }
-                    }
-                }))
-            });
+    // Until I figure out how to use HttpClient properly, I'll use WebRequest instead.
+    //
+    //public async Task SendMessageAsync(string Content)
+    //{
+    //    using (var client = new HttpClient())
+    //    {
+    //        await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, Target)
+    //        {
+    //            Content = new StringContent(JsonConvert.SerializeObject(new
+    //            {
+    //                username = Name,
+    //                embeds = new[]
+    //                {
+    //                    new
+    //                    {
+    //                        title = "High Activity Alert System - ALPHA",
+    //                        description = Content,
+    //                        color = Color
+    //                    }
+    //                }
+    //            }))
+    //        });
+    //    }
+    //}
 
-            return response.IsSuccessStatusCode;
+    // This is stupid and should be repalced as soon as Northwood releases the Surface Update.
+    public async Task SendMessage(string Content)
+    {
+        WebRequest wr = (HttpWebRequest)WebRequest.Create(Target);
+        wr.ContentType = "application/json";
+        wr.Method = "POST";
+
+        using (var streamWriter = new StreamWriter(wr.GetRequestStream()))
+        {
+            string json = JsonConvert.SerializeObject(new
+            {
+                username = Name,
+                embeds = new[]
+                {
+                    new
+                    {
+                        title = $"High Activity Alert System - ALPHA",
+                        description = Content,
+                        color = Color
+                    }
+                }
+            });
+            streamWriter.Write(json);
         }
+
+        var response = (HttpWebResponse)wr.GetResponse();
+
+        if (response.StatusCode == HttpStatusCode.OK)
+            return;
+        else
+            Log.Debug("Embed sent successfully.");
     }
 
     public void Dispose() { }

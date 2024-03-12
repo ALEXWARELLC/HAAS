@@ -1,4 +1,5 @@
-﻿using Exiled.Events.EventArgs.Player;
+﻿using Exiled.API.Features;
+using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Server;
 using HAAS.API;
 using HAAS.API.Features.Networking;
@@ -34,21 +35,14 @@ internal class PlayerEventHandler
         if (!_.Player.IsNPC)
             PlayerCount++;
 
-        Task.Run(async () => await SendAlert());
+        SendAlert();
     }
-
-    public async Task SendAlert()
+    public async void SendAlert()
     {
         if (PreTriggered || PlayerCount < LocalSettings.MinPlayerCount)
             return;
 
-        if (await WebhookClient.SendMessageAsync(LocalSettings.WebhookMessage))
-        {
-            // The Webhook managed to be sent, so we can set the PreTriggered flag to true.
-            PreTriggered = true;
-        };
-
-        // If the Webhook failed to send, we don't set the PreTriggered flag to true
-        // and it'll retry sending messages to the webhook on the next player verification.
+        await WebhookClient.SendMessage(LocalSettings.WebhookMessage);
+        PreTriggered = true;
     }
 }
