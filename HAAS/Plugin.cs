@@ -1,5 +1,9 @@
 ﻿using Exiled.API.Features;
 using Exiled.API.Interfaces;
+using HAAS.API;
+using HAAS.API.Features.Networking;
+using HAAS.API.Interfaces;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HAAS;
 
@@ -7,43 +11,29 @@ public class Plugin : Plugin<Config>
 {
     public override string Name => "High Activity Alert System";
     public override string Author => "Cypher The Protogen";
-    public override string Prefix => "HAAS";
-    public override Version Version => new Version(0, 0, 1, 2);
-    private API.Features.EventHandler? Events;
-    
-    public async override void OnEnabled()
+    public override string Prefix => "haas";
+    public override Version Version => new Version(0, 0, 1, 3);
+    internal WebhookClient WebhookClient { get; private set; }
+    internal PlayerEventHandler PlayerEvents { get; private set; }
+
+    public override void OnEnabled()
     {
-        Log.Info("Validating HAAS Configuration...");
-        ValidateConfigs(Config);
-        Log.Info("Configuring HAAS Event Handlers...");
-        Events = new();
-        Events.Enable(Config);
+        WebhookClient = new WebhookClient(Config.Settings.WebhookSettings);
+        PlayerEvents = new PlayerEventHandler(WebhookClient, Config.Settings);
 
-        if (Config.Debug)
-            API.Features.WebhookConnector.Send(Config.WebhookURL, API.Features.WebhookConnector.BuildMessage("HAAS has been initialized successfully."));
-    }
-
-    private bool ValidateConfigs(Config config)
-    {
-        if (!API.Features.ConfigurationValidator.IsWebhook(config.WebhookURL))
-        {
-            Log.Error("The provided webhook is invalid. Please ensure you have set a valid webhook URL.");
-            return false;
-        }
-
-        if (API.Features.ConfigurationValidator.ValidSensitivity(config.PlayerSensitivity))
-        {
-            Log.Error("You have provided an invalid Player Sensitivity. Please check your HAAS configuration.");
-        }
-
-        Log.Info("Your HAAS Configuration has been successfully validated.");
-        return true;
+        Exiled.Events.Handlers.Player.Verified += PlayerEvents.OnPlayerVerified;
+        Exiled.Events.Handlers.Player.Left += PlayerEvents.OnPlayerLeft;
+        Exiled.Events.Handlers.Server.EndingRound += PlayerEvents.OnRoundRestart;
     }
 
     public override void OnDisabled()
     {
-        Log.Info("Shutting down HAAS...");
-        Events?.Disable();
+        Exiled.Events.Handlers.Player.Verified -= PlayerEvents.OnPlayerVerified;
+        Exiled.Events.Handlers.Player.Left -= PlayerEvents.OnPlayerLeft;
+        Exiled.Events.Handlers.Server.EndingRound -= PlayerEvents.OnRoundRestart;
+        
+        WebhookClient.Dispose();
+        PlayerEvents = null;
     }
 }
 
@@ -51,7 +41,5 @@ public class Config : IConfig
 {
     public bool IsEnabled { get; set; } = true;
     public bool Debug { get; set; } = false;
-    public string WebhookURL { get; set; } = string.Empty;
-    public short PlayerSensitivity { get; set; } = 10;
-    public string CustomMessage { get; set; } = "Join the server! There's lots of people.";
+    public Settings Settings { get; set; } = new();
 }
